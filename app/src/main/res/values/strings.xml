@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Infinity Mission Generator</string>
+    <string name="action_settings">Settings</string>
+    <string name="no_mission_text">Click the + button to add a mission!</string>
+</resources>
