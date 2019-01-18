@@ -103,19 +103,18 @@ public class MainActivity extends AppCompatActivity {
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            switch (name) {
-                case "id":
-                    id = reader.nextInt();
-                case "icon":
-                    icon = reader.nextString();
-                case "name":
-                    mission_name = reader.nextString();
-                case "standardReq":
-                    standardReq = reader.nextString();
-                case "standardObjective":
-                    standardObjective = reader.nextString();
-                default:
-                    reader.skipValue();
+            if (name.equals("number")) {
+                id = reader.nextInt();
+            } else if (name.equals("icon")) {
+                icon = reader.nextString();
+            } else if (name.equals("name")) {
+                mission_name = reader.nextString();
+            } else if (name.equals("standardReq")) {
+                standardReq = reader.nextString();
+            } else if (name.equals("standardObjective")) {
+                standardObjective = reader.nextString();
+            } else {
+                reader.skipValue();
             }
         }
         reader.endObject();
