@@ -28,7 +28,24 @@ public class MainActivity extends AppCompatActivity {
     private int mission_count = 0;
     private LinearLayout mission_lnrlyt;
     private TextView no_mission_label;
-    private List<Mission> missionList;
+    private List<Mission> mission_list;
+    private Mission default_mission;
+    private boolean placeholder_removed = false;
+
+    private Mission buildDefaultMission() {
+        Mission default_mission = new Mission();
+
+        default_mission.icon = "none";
+        default_mission.standardReq = "none";
+        default_mission.name = "Secure HVT";
+        default_mission.standardObjective = ("The Secure HVT optional Classified Objective is" +
+                "accomplished when at the end of the game the player has one of his troopers (who" +
+                "is not in a null state) inside the Zone of Control of the enemy HVT and at the" +
+                "same time, the Zone of Control of his own HVT is free of enemy troops(not" +
+                "counting those in a Null state).");
+
+        return default_mission;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,12 +56,14 @@ public class MainActivity extends AppCompatActivity {
 
         mission_lnrlyt = findViewById(R.id.mission_lnrlyt);
         no_mission_label = findViewById(R.id.no_mission_label);
+        default_mission = buildDefaultMission();
+
         InputStream missionFile = getResources().openRawResource(R.raw.missions);
         try {
-            missionList = readJsonStream(missionFile);
+            mission_list = readJsonStream(missionFile);
         } catch (IOException e) {
             Toast.makeText(this, "Failed to load JSON", Toast.LENGTH_LONG).show();
-            missionList = null;
+            mission_list = null;
         }
 
         FloatingActionButton add_mission_btn = findViewById(R.id.add_mission);
@@ -56,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
                 add_mission();
             }
         });
-        if (missionList == null) {
+        if (mission_list == null) {
             add_mission_btn.setEnabled(false);
         }
     }
@@ -65,12 +84,13 @@ public class MainActivity extends AppCompatActivity {
         Mission new_mission;
         System.out.println("Adding a new mission...");
         mission_count++;
-        if (mission_lnrlyt.getChildAt(0).equals(no_mission_label)) {
+        if (!placeholder_removed) {
             System.out.println("Removing default mission...");
             mission_lnrlyt.removeAllViews();
+            placeholder_removed = true;
         }
         System.out.println("Adding Mission #" + Integer.toString(mission_count));
-        new_mission = missionList.get(ThreadLocalRandom.current().nextInt(1, missionList.size() + 1));
+        new_mission = mission_list.get(ThreadLocalRandom.current().nextInt(1, mission_list.size() + 1));
         mission_lnrlyt.addView(build_mission(new_mission));
     }
 

@@ -14,4 +14,7 @@ class Mission {
         standardReq = in_standardReq;
         standardObjective = in_standardObjective;
     }
+
+    Mission() {
+    }
 }
