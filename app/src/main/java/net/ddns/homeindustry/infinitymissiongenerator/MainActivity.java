@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Mission> mission_list;
     private Mission default_mission;
     private boolean placeholder_removed = false;
+    private List<Mission> selected_mission_list;
 
     private Mission buildDefaultMission() {
         Mission default_mission = new Mission();
@@ -45,6 +46,13 @@ public class MainActivity extends AppCompatActivity {
                 "counting those in a Null state).");
 
         return default_mission;
+    }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
     }
 
     @Override
@@ -91,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
         }
         System.out.println("Adding Mission #" + Integer.toString(mission_count));
         new_mission = mission_list.get(ThreadLocalRandom.current().nextInt(1, mission_list.size() + 1));
+        selected_mission_list.add(new_mission);
         mission_lnrlyt.addView(build_mission(new_mission));
     }
 
@@ -141,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         return new Mission(id, icon, mission_name, standardReq, standardObjective);
     }
 
-    private LinearLayout build_mission(Mission mission) {
+    private LinearLayout build_mission(final Mission mission) {
         LinearLayout single_mission_lnrlyt = new LinearLayout(this);
         int mission_number = mission.id;
         int viewID = View.generateViewId();
@@ -167,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 LinearLayout layout = (LinearLayout) v.getParent().getParent();
                 layout.removeView((View) v.getParent());
+                selected_mission_list.remove(mission);
             }
         });
         single_mission_lnrlyt.addView(mission_title);
