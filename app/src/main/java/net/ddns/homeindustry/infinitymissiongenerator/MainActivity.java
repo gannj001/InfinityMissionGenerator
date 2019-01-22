@@ -1,11 +1,12 @@
 package net.ddns.homeindustry.infinitymissiongenerator;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.JsonReader;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,16 +16,18 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TEMP_FILE_NAME = "temp_file.txt";
     private int mission_count = 0;
     private LinearLayout mission_lnrlyt;
     private TextView no_mission_label;
@@ -32,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private Mission default_mission;
     private boolean placeholder_removed = false;
     private List<Mission> selected_mission_list;
+    private MissionListBuilder mlb = new MissionListBuilder();
 
     private Mission buildDefaultMission() {
         Mission default_mission = new Mission();
@@ -48,11 +52,52 @@ public class MainActivity extends AppCompatActivity {
         return default_mission;
     }
 
-
     @Override
     protected void onPause() {
         super.onPause();
-        
+        FileOutputStream fileOutputStream;
+        List<Integer> selected_ids = new ArrayList<>();
+
+        for (int i = 0; i < selected_mission_list.size(); i++) {
+            selected_ids.add(selected_mission_list.get(i).id);
+        }
+
+        try {
+            fileOutputStream = openFileOutput(TEMP_FILE_NAME, Context.MODE_PRIVATE);
+            fileOutputStream.write(TextUtils.join(",", selected_ids).getBytes());
+            fileOutputStream.close();
+        } catch (FileNotFoundException fnfe) {
+            //oh well...
+        } catch (IOException ioe) {
+            //also oh well...
+        }
+
+    }
+
+    protected void onResume() {
+        super.onResume();
+
+        System.out.println("Removing default mission...");
+        mission_lnrlyt.removeAllViews();
+        placeholder_removed = true;
+
+        FileInputStream fileInputStream;
+        String mission_string;
+        String[] mission_ids;
+
+        try {
+            fileInputStream = openFileInput(TEMP_FILE_NAME);
+            fileInputStream.read();
+            mission_string = fileInputStream.toString();
+            mission_ids = mission_string.split(",");
+            for (int i = 0; i < mission_ids.length; i++) {
+                add_mission(Integer.getInteger(mission_ids[i]));
+            }
+        } catch (FileNotFoundException fnfe) {
+            //still oh well...
+        } catch (IOException ioe) {
+            //yup, oh well
+        }
     }
 
     @Override
@@ -68,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
         InputStream missionFile = getResources().openRawResource(R.raw.missions);
         try {
-            mission_list = readJsonStream(missionFile);
+            mission_list = mlb.readJsonStream(missionFile);
         } catch (IOException e) {
             Toast.makeText(this, "Failed to load JSON", Toast.LENGTH_LONG).show();
             mission_list = null;
@@ -103,56 +148,28 @@ public class MainActivity extends AppCompatActivity {
         mission_lnrlyt.addView(build_mission(new_mission));
     }
 
-    private List<Mission> readJsonStream(InputStream in) throws IOException {
-        JsonReader reader = new JsonReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-        try {
-            return readMissionArray(reader);
-        } finally {
-            reader.close();
+    private void add_mission(int mission_id) {
+        Mission new_mission = null;
+        if (!placeholder_removed) {
+            System.out.println("Removing default mission...");
+            mission_lnrlyt.removeAllViews();
+            placeholder_removed = true;
         }
-    }
-
-    private List<Mission> readMissionArray(JsonReader reader) throws IOException {
-        List<Mission> missions = new ArrayList<>();
-        reader.beginArray();
-        while (reader.hasNext()) {
-            missions.add(readMission(reader));
-        }
-        reader.endArray();
-        return missions;
-    }
-
-    private Mission readMission(JsonReader reader) throws IOException {
-        int id = -1;
-        String icon = "none";
-        String mission_name = "none";
-        String standardReq = "none";
-        String standardObjective = "none";
-
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String name = reader.nextName();
-            if (name.equals("number")) {
-                id = reader.nextInt();
-            } else if (name.equals("icon")) {
-                icon = reader.nextString();
-            } else if (name.equals("name")) {
-                mission_name = reader.nextString();
-            } else if (name.equals("standardReq")) {
-                standardReq = reader.nextString();
-            } else if (name.equals("standardObjective")) {
-                standardObjective = reader.nextString();
-            } else {
-                reader.skipValue();
+        for (int i = 0; i < mission_list.size(); i++) {
+            if (mission_list.get(i).id == mission_id) {
+                new_mission = mission_list.get(i);
             }
         }
-        reader.endObject();
-        return new Mission(id, icon, mission_name, standardReq, standardObjective);
+        if (new_mission != null) {
+            mission_lnrlyt.addView(build_mission(new_mission));
+        }
+
     }
 
     private LinearLayout build_mission(final Mission mission) {
-        LinearLayout single_mission_lnrlyt = new LinearLayout(this);
+        MissionLayout single_mission_lnrlyt = new MissionLayout(this);
         int mission_number = mission.id;
+        single_mission_lnrlyt.setMissionNumber(mission_number);
         int viewID = View.generateViewId();
 
         single_mission_lnrlyt.setId(viewID);
